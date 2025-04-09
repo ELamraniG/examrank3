@@ -1,79 +1,91 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 int match_space(FILE *f)
 {
-        // You may insert code here
-	char c = fgetc(f);
-	while (!isspace(c))
-	{
-		if (c == EOF)
-			return -1;
+    char c;
+	c = fgetc(f);
+	while(isspace(c))
 		c = fgetc(f);
-		if (c == EOF)
-			return -1;
-	}
-	ungetc(c, f);
-	return (1);
+	if (c == EOF)
+		return -1;
+	ungetc(c,f);
+    return (1);
 }
 
 int match_char(FILE *f, char c)
 {
-        // You may insert code here
-	return (c == fgetc(f));
-
-
-    return (-1);
+	char p;
+	p = fgetc(f);
+	if (p == EOF)
+		return -1;
+	if (p != c)
+		return -1;
+	
+    return (1);
 }
 
 int scan_char(FILE *f, va_list ap)
 {
-        // You may insert code here
-	char c = fgetc(f);
+    char c = fgetc(f);
 	if (c == EOF)
 		return -1;
-	*(va_arg(ap, int *)) = c;
-	return 1;
-    return (0);
+	char *p = va_arg(ap, char *);
+	*p = c;
+    return (1);
 }
 
 int scan_int(FILE *f, va_list ap)
 {
-        // You may insert code here
-	long i = 0;
-	int counter = 0;
-	int *arg = va_arg(ap, int*);
-	char c = fgetc(f);
-	while (c >= '0' && c <= '9')
+	char buffer[100000];
+	int i = 0;
+	int c = fgetc(f);
+	if (c == '-' || c == '+')
 	{
-		counter++;
-		i = (i * 10) + c - '0';
+		buffer[i++] = c;
 		c = fgetc(f);
 	}
-	*arg = i;
-	return counter;
-    return (0);
+	if (!isdigit(c))
+		return -1;
+	while (isdigit(c))
+	{
+		buffer[i++] = c;
+		c = fgetc(f);
+	}
+	if (c == EOF)
+		return -1;
+	buffer[i] = 0;
+	int *n = va_arg(ap,int *);
+	*n = atoi(buffer);
+	ungetc(c,f);
+    return (1);
 }
 
 int scan_string(FILE *f, va_list ap)
 {
-        // You may insert code here
-
-	char c;
-	char *str = (char *)va_arg(ap, int *);
-	int counter = 0;
-	c = fgetc(f);
-	while (c != EOF && c != '\n')
+    char buffer[100000];
+	int i = 0;
+	char tmp = fgetc(f);
+	while (tmp != EOF && !isspace(tmp))
 	{
-		counter++;
-		*str = c;
-		str++;
-		c = fgetc(f);
+		buffer[i++] = tmp;
+		tmp = fgetc(f);
 	}
-	*str = 0;
-	return counter;
-    return (0);
+	if (i == 0)
+		return -1;
+	buffer[i] = 0;
+	char *p = va_arg(ap,char *);
+	i = 0;
+	while (buffer[i])
+	{
+		p[i] = buffer[i];
+		i++;
+	}
+	buffer[i] = 0;
+	ungetc(tmp,f);
+    return (1);
 }
 
 
@@ -102,7 +114,9 @@ int ft_vfscanf(FILE *f, const char *format, va_list ap)
 
 	int c = fgetc(f);
 	if (c == EOF)
+	{
 		return EOF;
+	}
 	ungetc(c, f);
 
 	while (*format)
@@ -132,10 +146,9 @@ int ft_vfscanf(FILE *f, const char *format, va_list ap)
 
 int ft_scanf(const char *format, ...)
 {
-	// ...
 	va_list ap;
-	va_start(ap, format);
+	va_start(ap,format);
 	int ret = ft_vfscanf(stdin, format, ap);
-	// ...
+	va_end(ap);
 	return ret;
 }
