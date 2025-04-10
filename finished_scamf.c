@@ -39,53 +39,48 @@ int scan_char(FILE *f, va_list ap)
 
 int scan_int(FILE *f, va_list ap)
 {
-	char buffer[100000];
-	int i = 0;
-	int c = fgetc(f);
+	long res = 0;
+	char c = fgetc(f);
+	if (c == EOF)
+		return -1;
+	int sign = 1;
 	if (c == '-' || c == '+')
 	{
-		buffer[i++] = c;
+		if (c == '-')
+		sign = -1;
 		c = fgetc(f);
 	}
 	if (!isdigit(c))
-		return -1;
-	while (isdigit(c))
+		return 0;
+	while(isdigit(c))
 	{
-		buffer[i++] = c;
+		res *= 10;
+		res += c - '0';
 		c = fgetc(f);
 	}
-	if (c == EOF)
-		return -1;
-	buffer[i] = 0;
-	int *n = va_arg(ap,int *);
-	*n = atoi(buffer);
-	ungetc(c,f);
+	int *r = va_arg(ap,int *);
+	*r = res * sign;
+	if (c != EOF)
+		ungetc(c,f);
     return (1);
 }
 
 int scan_string(FILE *f, va_list ap)
 {
-    char buffer[100000];
 	int i = 0;
-	char tmp = fgetc(f);
-	while (tmp != EOF && !isspace(tmp))
-	{
-		buffer[i++] = tmp;
-		tmp = fgetc(f);
-	}
-	if (i == 0)
+	char c = fgetc(f);
+	if (c == EOF)
 		return -1;
-	buffer[i] = 0;
-	char *p = va_arg(ap,char *);
-	i = 0;
-	while (buffer[i])
+	char *s = va_arg(ap,char *);
+	while (!isspace(c) && c != EOF)
 	{
-		p[i] = buffer[i];
-		i++;
+		s[i++] = c;
+		c = fgetc(f);
 	}
-	buffer[i] = 0;
-	ungetc(tmp,f);
-    return (1);
+	s[i] = 0;
+	if (c != EOF)
+		ungetc(c,f);
+	return 1;
 }
 
 
